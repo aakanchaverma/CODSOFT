@@ -1,0 +1,32 @@
+import java.util.*;
+public class task2
+{
+    public static void main(String[] args)
+    {
+        Scanner sc=new Scanner(System.in);
+        System.out.println("Enter the number of subjects");
+        int n=sc.nextInt();
+        System.out.println("Enter the marks in subjects one by one (the marks shoukd be out of 100)");
+        int sum=0;
+        for(int i=0;i<n;i++)
+            sum=sum+ sc.nextInt();
+        float avg=sum/n;
+        char grade='a';
+        if(avg>95)
+            grade='O';
+        if((avg>90)&&(avg<=95))
+            grade='E';
+        if((avg>80)&&(avg<=90))
+            grade='A';
+        if((avg>70)&&(avg<=80))
+            grade='B';
+        if((avg>60)&&(avg<=70))
+            grade='C';
+        if((avg>=40)&&(avg<=60))
+            grade='D';
+        if(avg<40)
+            grade='F';
+        System.out.println("Total marks: "+sum+"\nAverage Percentage: "+avg+"\nGrade: "+grade);
+        System.out.println("Index for Grade:\nO: Outstanding\nE: Excellent\nA= Very Good\nB= Good\nC=Could do Better\nD: Poor\nF: Fail");
+    }
+}
