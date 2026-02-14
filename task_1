@@ -1,0 +1,44 @@
+import java.util.*;
+public class task1
+{
+    int attempt=0;
+    int score=0;
+    public static void main(String[] args)
+    {
+        Scanner sc=new Scanner(System.in);
+        System.out.println("Welcome to Guess the Number!!!");
+        System.out.println("How to play the game:\n1. You would be given 3 chances. \n2. The system would generate a random number from 1 to 10 \nYou need to guess what number it is. \nIf you guess it correctly within 3 chances, you win!!:) Otherwise you lose!!:(");
+        System.out.println("That's it!! No other complex rules.. \n Now Enjoy!!!!");
+        task1 ob=new task1();
+        ob.game();
+        System.out.println("Enter 0 to play again");
+        int ch=sc.nextInt();
+        if(ch==0)
+            ob.game();
+    }
+    void game()
+    {
+        attempt++;
+        Scanner sc1=new Scanner(System.in);
+        int n=(int)(Math.random()*100)-1;
+        System.out.println("Number: "+n);
+        int n1=0,w=0,i=0;
+        System.out.println("The system has done its job! Now its your turn!!");
+        for(i=0;i<3;i++)
+        {
+            System.out.println("This is your chance number "+(i+1));
+            System.out.println("Enter your guess");
+            n1=sc1.nextInt();
+            if(n1==n)
+            {
+                System.out.println("Congratulations!!! \nYour guess was correct!! \nYou won!!");
+                w=1;
+                score=100-(attempt*10)-(i*5);
+                break;
+            }
+            else
+                System.out.println("Wrong choice entered!!");
+        }
+        System.out.println("Score: "+score);
+    }
+}
