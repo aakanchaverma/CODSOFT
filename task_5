@@ -1,0 +1,244 @@
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class task5 {
+
+    // -----------------------------------------------------------------
+    // INNER CLASS 1: Represents the Student (Requirement 1)
+    // -----------------------------------------------------------------
+    static class LearnerProfile {
+        private String fullName;
+        private String uniqueId; // Roll Number
+        private String academicGrade;
+        private String contactEmail;
+
+        public LearnerProfile(String name, String id, String grade, String email) {
+            this.fullName = name;
+            this.uniqueId = id;
+            this.academicGrade = grade;
+            this.contactEmail = email;
+        }
+
+        // Custom format for saving to file (Requirement 4)
+        public String toFileString() {
+            return uniqueId + "||" + fullName + "||" + academicGrade + "||" + contactEmail;
+        }
+
+        // Static factory method to recreate object from file string
+        public static LearnerProfile fromFileString(String line) {
+            String[] parts = line.split("\\|\\|");
+            if (parts.length == 4) {
+                return new LearnerProfile(parts[1], parts[0], parts[2], parts[3]);
+            }
+            return null; // Corrupt data
+        }
+
+        // Getters and Setters
+        public String getUniqueId() { return uniqueId; }
+        public String getFullName() { return fullName; }
+        
+        public void setFullName(String n) { this.fullName = n; }
+        public void setAcademicGrade(String g) { this.academicGrade = g; }
+        public void setContactEmail(String e) { this.contactEmail = e; }
+
+        @Override
+        public String toString() {
+            return String.format(" [ID: %-6s] | Name: %-15s | Grade: %-4s | Email: %s", 
+                                 uniqueId, fullName, academicGrade, contactEmail);
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // INNER CLASS 2: Management System (Requirement 2 & 4)
+    // -----------------------------------------------------------------
+    static class RegistryService {
+        private List<LearnerProfile> studentList;
+        private final Path storagePath;
+
+        public RegistryService() {
+            this.studentList = new ArrayList<>();
+            this.storagePath = Paths.get("student_records.dat");
+            loadData(); // Auto-load on startup
+        }
+
+        // Requirement 2: Add Student
+        public void registerStudent(LearnerProfile student) {
+            studentList.add(student);
+            saveData();
+            System.out.println(" > System: Student registered successfully.");
+        }
+
+        // Requirement 2: Remove Student
+        public boolean removeStudent(String id) {
+            boolean removed = studentList.removeIf(s -> s.getUniqueId().equalsIgnoreCase(id));
+            if (removed) {
+                saveData();
+                System.out.println(" > System: Record deleted.");
+            } else {
+                System.out.println(" > System: No record found with ID " + id);
+            }
+            return removed;
+        }
+
+        // Requirement 2: Search Student
+        public LearnerProfile searchById(String id) {
+            for (LearnerProfile s : studentList) {
+                if (s.getUniqueId().equalsIgnoreCase(id)) {
+                    return s;
+                }
+            }
+            return null;
+        }
+
+        // Requirement 5: Edit Student
+        public void editStudent(String id, Scanner input) {
+            LearnerProfile s = searchById(id);
+            if (s != null) {
+                System.out.println(" > Editing Record: " + s.getFullName());
+                
+                System.out.print("Enter New Name (or '.' to keep current): ");
+                String newName = input.nextLine();
+                if (!newName.equals(".")) s.setFullName(newName);
+
+                System.out.print("Enter New Grade (or '.' to keep current): ");
+                String newGrade = input.nextLine();
+                if (!newGrade.equals(".")) s.setAcademicGrade(newGrade);
+
+                saveData(); // Save changes immediately
+                System.out.println(" > System: Record updated.");
+            } else {
+                System.out.println(" > System: Student not found.");
+            }
+        }
+
+        // Requirement 2: Display All
+        public void displayRegistry() {
+            if (studentList.isEmpty()) {
+                System.out.println(" > System: The registry is currently empty.");
+            } else {
+                System.out.println("\n--- CURRENT REGISTRY ---");
+                studentList.forEach(System.out::println);
+                System.out.println("------------------------");
+            }
+        }
+
+        // Requirement 4: Read/Write to File
+        private void saveData() {
+            List<String> lines = studentList.stream()
+                .map(LearnerProfile::toFileString)
+                .collect(Collectors.toList());
+            try {
+                Files.write(storagePath, lines);
+            } catch (IOException e) {
+                System.out.println(" > Error: Could not save data.");
+            }
+        }
+
+        private void loadData() {
+            if (!Files.exists(storagePath)) return;
+            try {
+                List<String> lines = Files.readAllLines(storagePath);
+                studentList.clear();
+                for (String line : lines) {
+                    LearnerProfile s = LearnerProfile.fromFileString(line);
+                    if (s != null) studentList.add(s);
+                }
+            } catch (IOException e) {
+                System.out.println(" > Error: Could not load data.");
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // MAIN CLASS: User Interface (Requirement 3 & 5 & 6)
+    // -----------------------------------------------------------------
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        RegistryService registry = new RegistryService();
+        boolean systemActive = true;
+
+        System.out.println("=========================================");
+        System.out.println("    ACADEMIC STUDENT PORTAL v2.0         ");
+        System.out.println("=========================================");
+
+        while (systemActive) {
+            System.out.println("\n[MENU]");
+            System.out.println("1. Register New Student");
+            System.out.println("2. Display All Records");
+            System.out.println("3. Search for Student");
+            System.out.println("4. Update Student Info");
+            System.out.println("5. Delete Student Record");
+            System.out.println("6. Exit Portal");
+            System.out.print("Select Operation (1-6): ");
+
+            String choice = scanner.nextLine(); // Reading as String prevents mismatch errors
+
+            switch (choice) {
+                case "1":
+                    // Requirement 6: Input Validation
+                    System.out.print("Enter Roll Number (ID): ");
+                    String id = scanner.nextLine();
+                    if (id.isEmpty()) { System.out.println(" > Error: ID cannot be empty."); break; }
+                    
+                    if (registry.searchById(id) != null) {
+                        System.out.println(" > Error: Student ID already exists.");
+                        break;
+                    }
+
+                    System.out.print("Enter Full Name: ");
+                    String name = scanner.nextLine();
+                    if (name.isEmpty()) { System.out.println(" > Error: Name required."); break; }
+
+                    System.out.print("Enter Grade (e.g., A, B, 9.5): ");
+                    String grade = scanner.nextLine();
+
+                    System.out.print("Enter Email: ");
+                    String email = scanner.nextLine();
+
+                    registry.registerStudent(new LearnerProfile(name, id, grade, email));
+                    break;
+
+                case "2":
+                    registry.displayRegistry();
+                    break;
+
+                case "3":
+                    System.out.print("Enter Roll Number to Search: ");
+                    String searchId = scanner.nextLine();
+                    LearnerProfile found = registry.searchById(searchId);
+                    if (found != null) {
+                        System.out.println(" > Record Found: " + found);
+                    } else {
+                        System.out.println(" > System: Not found.");
+                    }
+                    break;
+
+                case "4":
+                    System.out.print("Enter Roll Number to Edit: ");
+                    String editId = scanner.nextLine();
+                    registry.editStudent(editId, scanner);
+                    break;
+
+                case "5":
+                    System.out.print("Enter Roll Number to Delete: ");
+                    String delId = scanner.nextLine();
+                    System.out.print("Are you sure? (y/n): ");
+                    if (scanner.nextLine().equalsIgnoreCase("y")) {
+                        registry.removeStudent(delId);
+                    }
+                    break;
+
+                case "6":
+                    System.out.println(" > Saving data... Goodbye!");
+                    systemActive = false;
+                    break;
+
+                default:
+                    System.out.println(" > Invalid selection. Please try again.");
+            }
+        }
+        scanner.close();
+    }
+}
