@@ -1,0 +1,132 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI; // Added for modern URL creation
+import java.net.URL;
+import java.util.Scanner;
+
+public class task4 {
+
+    public static void main(String[] args) {
+        CurrencyInterface.launch();
+    }
+
+    // ---------------------------------------------------------
+    // INTERNAL MODULE: NETWORK & DATA FETCHING
+    // ---------------------------------------------------------
+    static class RateProvider {
+        // Using a reliable, free API for real-time rates
+        private static final String API_ENDPOINT = "https://api.exchangerate-api.com/v4/latest/";
+
+        public static double getConversionRatio(String baseCode, String targetCode) throws Exception {
+            // FIX: Using URI.create().toURL() to avoid the "deprecated API" warning in Java 20+
+            String urlStr = API_ENDPOINT + baseCode.toUpperCase();
+            URL url = URI.create(urlStr).toURL();
+            
+            // Open connection
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            int status = connection.getResponseCode();
+            if (status != 200) {
+                throw new RuntimeException("API Connection failed. HTTP Status: " + status);
+            }
+
+            // Read the response stream
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder responseContent = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                responseContent.append(line);
+            }
+            reader.close();
+
+            // Parse the specific rate from the JSON response
+            return extractRate(responseContent.toString(), targetCode.toUpperCase());
+        }
+
+        // Custom manual parser: Keeps the code lightweight (no Gson/Jackson needed)
+        private static double extractRate(String jsonResponse, String targetCurrency) {
+            // Pattern matching for "TARGET": 123.45 in the JSON string
+            String searchKey = "\"" + targetCurrency + "\":";
+            int index = jsonResponse.indexOf(searchKey);
+
+            if (index == -1) {
+                throw new IllegalArgumentException("Currency " + targetCurrency + " not found.");
+            }
+
+            // Locate the start and end of the value
+            int start = index + searchKey.length();
+            int endComma = jsonResponse.indexOf(",", start);
+            int endBrace = jsonResponse.indexOf("}", start);
+            
+            // Determine where the number ends
+            int end = (endComma == -1) ? endBrace : (endBrace == -1) ? endComma : Math.min(endComma, endBrace);
+
+            String rateString = jsonResponse.substring(start, end);
+            return Double.parseDouble(rateString);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // INTERNAL MODULE: USER INTERFACE & LOGIC
+    // ---------------------------------------------------------
+    static class CurrencyInterface {
+        private static final Scanner scanner = new Scanner(System.in);
+
+        public static void launch() {
+            System.out.println("===========================================");
+            System.out.println("      REAL-TIME CURRENCY CONVERTER         ");
+            System.out.println("===========================================");
+
+            try {
+                // Step 1: User Inputs
+                System.out.print("Base Currency (e.g. USD): ");
+                String baseCurrency = scanner.next().toUpperCase();
+
+                System.out.print("Target Currency (e.g. EUR): ");
+                String targetCurrency = scanner.next().toUpperCase();
+
+                System.out.print("Amount to convert: ");
+                if (!scanner.hasNextDouble()) {
+                    System.out.println(" > Error: Please enter a valid number.");
+                    return;
+                }
+                double inputAmount = scanner.nextDouble();
+
+                // Step 2: Processing
+                System.out.print(" > Connecting to exchange server...");
+                double rate = RateProvider.getConversionRatio(baseCurrency, targetCurrency);
+                System.out.println(" Done.");
+
+                // Step 3: Calculation & Output
+                double finalAmount = inputAmount * rate;
+                String symbol = getSymbol(targetCurrency);
+
+                System.out.println("\n-------------------------------------------");
+                System.out.printf(" Rate: 1 %s = %.4f %s%n", baseCurrency, rate, targetCurrency);
+                System.out.println("-------------------------------------------");
+                System.out.printf(" RESULT: %s %.2f %s%n", symbol, finalAmount, targetCurrency);
+                System.out.println("===========================================");
+
+            } catch (Exception e) {
+                System.out.println("\n[Error]: " + e.getMessage());
+                System.out.println(" > Tip: Check your internet connection or currency codes.");
+            }
+        }
+
+        // Helper to map codes to symbols
+        private static String getSymbol(String code) {
+            switch (code) {
+                case "USD": return "$";
+                case "EUR": return "€";
+                case "GBP": return "£";
+                case "INR": return "₹";
+                case "JPY": return "¥";
+                default: return ""; 
+            }
+        }
+    }
+}
