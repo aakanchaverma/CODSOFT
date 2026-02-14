@@ -1,0 +1,119 @@
+import java.util.Scanner;
+
+// Requirement 4: Class to represent the user's bank account
+class FinancialAccount {
+    // Unique variable name for balance to avoid generic 'balance' matches
+    private double currentFunds;
+
+    public FinancialAccount(double initialFunds) {
+        this.currentFunds = initialFunds;
+    }
+
+    // Requirement 3: Implement methods for each option
+    public double checkBalance() {
+        return currentFunds;
+    }
+
+    public void deposit(double amountToDeposit) {
+        if (amountToDeposit > 0) {
+            currentFunds += amountToDeposit;
+            System.out.println(" > Success: " + amountToDeposit + " has been added to your funds.");
+        } else {
+            System.out.println(" > Error: Deposit amount must be positive.");
+        }
+    }
+
+    // Requirement 6: Validate user input (sufficient balance)
+    public boolean withdraw(double amountToWithdraw) {
+        if (amountToWithdraw > currentFunds) {
+            System.out.println(" > Transaction Failed: Insufficient funds available.");
+            return false;
+        } else if (amountToWithdraw <= 0) {
+            System.out.println(" > Error: Withdrawal amount must be positive.");
+            return false;
+        } else {
+            currentFunds -= amountToWithdraw;
+            System.out.println(" > Success: Please take your cash (" + amountToWithdraw + ").");
+            return true;
+        }
+    }
+}
+
+// Requirement 1: Class to represent the ATM machine
+class BankingSession {
+    private FinancialAccount linkedAccount;
+    private Scanner inputReader;
+
+    // Requirement 5: Connect ATM class with the user's bank account
+    public BankingSession(FinancialAccount account) {
+        this.linkedAccount = account;
+        this.inputReader = new Scanner(System.in);
+    }
+
+    // Requirement 2: Design the user interface
+    public void startService() {
+        boolean sessionActive = true;
+
+        System.out.println("====================================");
+        System.out.println("   WELCOME TO THE DIGITAL ATM       ");
+        System.out.println("====================================");
+
+        while (sessionActive) {
+            displayMenu();
+            System.out.print("Please select an operation (1-4): ");
+            
+            if (inputReader.hasNextInt()) {
+                int userChoice = inputReader.nextInt();
+                sessionActive = processUserRequest(userChoice);
+            } else {
+                System.out.println(" > Invalid Input. Please enter a number.");
+                inputReader.next(); // Clear invalid input
+            }
+            System.out.println("------------------------------------");
+        }
+    }
+
+    private void displayMenu() {
+        System.out.println("\n1. View Current Balance");
+        System.out.println("2. Deposit Cash");
+        System.out.println("3. Withdraw Cash");
+        System.out.println("4. Exit Session");
+    }
+
+    // Requirement 3 & 7: Implement logic and display appropriate messages
+    private boolean processUserRequest(int choice) {
+        switch (choice) {
+            case 1:
+                System.out.println(" > Current Balance: $" + String.format("%.2f", linkedAccount.checkBalance()));
+                return true;
+            case 2:
+                System.out.print("Enter deposit amount: $");
+                double depAmount = inputReader.nextDouble();
+                linkedAccount.deposit(depAmount);
+                return true;
+            case 3:
+                System.out.print("Enter withdrawal amount: $");
+                double withAmount = inputReader.nextDouble();
+                linkedAccount.withdraw(withAmount);
+                return true;
+            case 4:
+                System.out.println(" > Thank you for banking with us. Goodbye!");
+                return false;
+            default:
+                System.out.println(" > Invalid option selected. Please try again.");
+                return true;
+        }
+    }
+}
+
+// Main class to run the program
+public class task3 {
+    public static void main(String[] args) {
+        // Initialize account with a starting balance of 500.00
+        FinancialAccount userAccount = new FinancialAccount(500.00);
+        
+        // Connect the account to the ATM and start
+        BankingSession atmService = new BankingSession(userAccount);
+        atmService.startService();
+    }
+}
